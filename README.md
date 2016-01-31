@@ -3,31 +3,29 @@ aws-roleshell
 
 [aws-cli]: https://github.com/aws/aws-cli
 
-A plugin for [aws-cli][aws-cli], designed to simplify
-the task of loading credentials for assumed roles into environment variables.
-This plugin retrieves credentials using AssumeRole, sets the appropriate
-environment variables, and then executes a wrapped command. This is designed to
-serve as an adapter for software which is not capable of assuming a role by
-itself.
+An [aws-cli][aws-cli] plugin that loads IAM Role credentials into environment
+variables. This plugin retrieves credentials using sts:AssumeRole, sets the
+equivalent environment variables, and then executes a wrapped command. This
+plugin is designed to serve as an adapter for software which is not capable of
+assuming a role by itself.
 
 Usage is like so:
 
     $ aws --profile readonly roleshell -- mycommand
 
-Under this example, `mycommand` will run with IAM role credentials defined by
+In the above example, `mycommand` will run with IAM role credentials defined by
 the `readonly` profile.
 
-aws-roleshell makes use of the aws-cli temporary credentials cache, so multiple
-roleshells can re-use the same temporary credentials until they expire. This is
-especially useful for IAM roles that require MFA, because an MFA token is only
-required once per hour, no matter how many shells are launched.
+aws-roleshell makes use of the [aws-cli][aws-cli] temporary credentials cache,
+so multiple roleshells can re-use the same temporary credentials until they
+expire. This is especially useful for IAM roles that require MFA, because an
+MFA token is only required once per hour, no matter how many shells are
+launched.
 
 install
 -------
 
-First, `pip install` this egg.
-
-Next, add the following into your ~/.aws/config:
+After installing this egg, add the following into your `~/.aws/config`:
 
     [plugins]
     roleshell = aws_roleshell

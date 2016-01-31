@@ -25,7 +25,7 @@ launched.
 install
 -------
 
-After installing this egg, add the following into your `~/.aws/config`:
+After installing this egg into your `$PYTHONPATH`, add the following into your `~/.aws/config`:
 
     [plugins]
     roleshell = aws_roleshell

@@ -19,8 +19,8 @@ the `readonly` profile.
 aws-roleshell makes use of the [aws-cli][aws-cli] temporary credentials cache,
 so multiple roleshells can re-use the same temporary credentials until they
 expire. This is especially useful for IAM roles that require MFA, because an
-MFA token is only required once per hour, no matter how many shells are
-launched.
+MFA token is only required once per hour (by default), no matter how many
+shells are launched.
 
 install
 -------
@@ -72,3 +72,23 @@ You might also define a convenience function to assume a role without
 nesting shells. The example below has been tested with bash and zsh:
 
     assume_role() { exec aws --profile "$1" roleshell; }
+
+similar projects
+----------------
+
+When I started working on this, I wasn't aware of quite how many other projects
+provide STS-based role switching. As far as I am aware, this project is the
+only one that both provides an aws-cli plugin and integrates with aws-cli's
+configuration and caching features. But if an aws-cli plugin isn't your style,
+try out one of the below options:
+
+* [asagage/aws-mfa-script](https://github.com/asagage/aws-mfa-script) Bash, with dependency on aws-cli
+* [boamski/aws-mfa](https://github.com/broamski/aws-mfa) Python, with dependency on boto3
+* [civisanalytics/iam-role-injector](https://github.com/civisanalytics/iam-role-injector) Bash, with dependency on aws-cli
+* [dcoker/awsmfa](https://github.com/dcoker/awsmfa/) Python, with dependency on botocore
+* [jbuck/assume-aws-role](https://github.com/jbuck/assume-aws-role) Node.js
+* [jimbrowne/aws-sts-helpers](https://github.com/jimbrowne/aws-sts-helpers) Bash and Python, with dependency on boto
+* [lonelyplanet/aws-mfa](https://github.com/lonelyplanet/aws-mfa) Ruby, with dependency on aws-cli
+* [paperg/awsudo](https://github.com/paperg/awsudo) Python, with dependency on boto
+* [paybyphone/aws-role-init](https://github.com/paybyphone/aws-role-init) Python, with dependency on boto3
+* [remind101/assume-role](https://github.com/remind101/assume-role) Go, with dependency on aws-cli

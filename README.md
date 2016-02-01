@@ -16,6 +16,11 @@ Usage is like so:
 In the above example, `mycommand` will run with IAM role credentials defined by
 the `readonly` profile.
 
+Or you could load the appropriate environment variables into your shell by
+invoking roleshell without arguments:
+
+    $ eval $(aws --profile readonly roleshell)
+
 aws-roleshell makes use of the [aws-cli][aws-cli] temporary credentials cache,
 so multiple roleshells can re-use the same temporary credentials until they
 expire. This is especially useful for IAM roles that require MFA, because an
@@ -55,23 +60,14 @@ some reading:
     EOF
 
 After loading credentials, `aws roleshell` will launch whatever command you
-specify on the command line. If no command is given, roleshell will launch the
-binary specified in the $SHELL environment variable.
+specify on the command line. If no command is given, roleshell will output
+shell-compatible variable exports for use with eval.
 
     $ aws ec2 describe-instances # runs as 'user/myuser'
-    $ aws --profile readonly roleshell
+    $ eval $(aws --profile readonly roleshell)
     Enter MFA code: ******
     $ aws ec2 describe-instances # runs as 'role/readonly'
     ...
-
-In the example shown above, you may continue using the shell created by
-roleshell until the temporary credentials expire. When you are done, exiting
-the shell will return you to your original shell.
-
-You might also define a convenience function to assume a role without
-nesting shells. The example below has been tested with bash and zsh:
-
-    assume_role() { exec aws --profile "$1" roleshell; }
 
 similar projects
 ----------------

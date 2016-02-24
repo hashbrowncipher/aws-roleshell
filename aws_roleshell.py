@@ -43,7 +43,8 @@ def run_command(creds, command):
 class RoleShell(BasicCommand):
     NAME = 'roleshell'
     DESCRIPTION = (
-        'Executes a shell with temporary AWS credentials provided as environment variables')
+        'Executes a shell with temporary AWS credentials provided as '
+        'environment variables')
     ARG_TABLE = [
         dict(name='command', nargs=argparse.REMAINDER, positional_arg=True),
     ]

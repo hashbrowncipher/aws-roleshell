@@ -1,7 +1,6 @@
 import argparse
 import os
 import shlex
-import textwrap
 
 from awscli.customizations.commands import BasicCommand
 
@@ -14,15 +13,15 @@ def inject_commands(command_table, session, **kwargs):
     command_table['roleshell'] = RoleShell(session)
 
 
-def print_creds(creds):
-    quoted_vars = map(shlex.quote, (creds.access_key,
-                                    creds.secret_key, creds.token))
+def print_creds(environment_overrides):
+    exports = []
+    for var, value in environment_overrides.items():
+        if value is not None:
+            exports.append("export {}={}".format(var, shlex.quote(value)))
+        else:
+            exports.append("unset {}".format(var))
 
-    print(textwrap.dedent("""\
-        export AWS_ACCESS_KEY_ID={}
-        export AWS_SECRET_ACCESS_KEY={}
-        export AWS_SESSION_TOKEN={}\
-    """.format(*quoted_vars)))
+    print("\n".join(exports))
 
 
 def get_exec_args(input_command):
@@ -32,11 +31,15 @@ def get_exec_args(input_command):
     return (input_command[0], input_command)
 
 
-def run_command(creds, command):
-    os.environ['AWS_ACCESS_KEY_ID'] = creds.access_key
-    os.environ['AWS_SECRET_ACCESS_KEY'] = creds.secret_key
-    os.environ['AWS_SESSION_TOKEN'] = creds.token
+def run_command(environment_overrides, command):
+    for var, value in environment_overrides.items():
+        if value is not None:
+            os.environ[var] = environment_overrides[var]
+        elif var in os.environ:
+            del os.environ[var]
 
+    # TODO: use a copy of the environment with variables deleted, to support
+    # platforms without unsetenv() support.
     os.execvp(*get_exec_args(command))
 
 
@@ -49,10 +52,20 @@ class RoleShell(BasicCommand):
         dict(name='command', nargs=argparse.REMAINDER, positional_arg=True),
     ]
 
+    def _build_environment_overrides(self):
+        environment_overrides = {}
+
+        creds = self._session.get_credentials()
+        environment_overrides['AWS_ACCESS_KEY_ID'] = creds.access_key
+        environment_overrides['AWS_SECRET_ACCESS_KEY'] = creds.secret_key
+        environment_overrides['AWS_SESSION_TOKEN'] = creds.token
+
+        return environment_overrides
+
     def _run_main(self, args, parsed_globals):
-        c = self._session.get_credentials()
+        environment_overrides = self._build_environment_overrides()
 
         if len(args.command) == 0:
-            print_creds(c)
+            print_creds(environment_overrides)
         else:
-            run_command(c, args.command)
+            run_command(environment_overrides, args.command)

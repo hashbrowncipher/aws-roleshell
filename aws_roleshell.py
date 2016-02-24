@@ -60,6 +60,9 @@ class RoleShell(BasicCommand):
         environment_overrides['AWS_SECRET_ACCESS_KEY'] = creds.secret_key
         environment_overrides['AWS_SESSION_TOKEN'] = creds.token
 
+        region = self._session.get_config_variable('region')
+        environment_overrides['AWS_DEFAULT_REGION'] = region
+
         return environment_overrides
 
     def _run_main(self, args, parsed_globals):

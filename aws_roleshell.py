@@ -40,16 +40,30 @@ def run_command(environment_overrides, command):
 
     # TODO: use a copy of the environment with variables deleted, to support
     # platforms without unsetenv() support.
-    os.execvp(*get_exec_args(command))
+    os.execvp(command[0], command)
+
+
+def run_shell(environment_overrides, command):
+    # If the first argument to the shell begins with -, the user will want to
+    # separate the remainder of the arguments list with --, which awscli will
+    # unhelpfully pass on to us.
+    if command[0:1] == ["--"]:
+        command.pop(0)
+    command.insert(0, os.environ['SHELL'])
+    run_command(environment_overrides, command)
 
 
 class RoleShell(BasicCommand):
     NAME = 'roleshell'
     DESCRIPTION = (
-        'Executes a shell with temporary AWS credentials provided as '
+        'Executes a command with temporary AWS credentials provided as '
         'environment variables')
     ARG_TABLE = [
-        dict(name='command', nargs=argparse.REMAINDER, positional_arg=True),
+        dict(name='shell', action='store_true', help_text='Execute the current '
+             'shell instead of a command.  Any remaining arguments, if any, '
+             'are passed on to the new shell.'),
+        dict(name='command', nargs=argparse.REMAINDER, positional_arg=True,
+             synopsis='[command] [args ...]'),
     ]
 
     def _build_environment_overrides(self):
@@ -68,7 +82,9 @@ class RoleShell(BasicCommand):
     def _run_main(self, args, parsed_globals):
         environment_overrides = self._build_environment_overrides()
 
-        if len(args.command) == 0:
-            print_creds(environment_overrides)
-        else:
+        if args.shell:
+            run_shell(environment_overrides, args.command)
+        elif args.command:
             run_command(environment_overrides, args.command)
+        else:
+            print_creds(environment_overrides)

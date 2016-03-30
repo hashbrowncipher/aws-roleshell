@@ -1,7 +1,6 @@
 import argparse
 import os
 import shlex
-import textwrap
 
 from awscli.customizations.commands import BasicCommand
 
@@ -14,15 +13,15 @@ def inject_commands(command_table, session, **kwargs):
     command_table['roleshell'] = RoleShell(session)
 
 
-def print_creds(creds):
-    quoted_vars = map(shlex.quote, (creds.access_key,
-                                    creds.secret_key, creds.token))
+def print_creds(environment_overrides):
+    exports = []
+    for var, value in environment_overrides.items():
+        if value is not None:
+            exports.append("export {}={}".format(var, shlex.quote(value)))
+        else:
+            exports.append("unset {}".format(var))
 
-    print(textwrap.dedent("""\
-        export AWS_ACCESS_KEY_ID={}
-        export AWS_SECRET_ACCESS_KEY={}
-        export AWS_SESSION_TOKEN={}\
-    """.format(*quoted_vars)))
+    print("\n".join(exports))
 
 
 def get_exec_args(input_command):
@@ -32,26 +31,60 @@ def get_exec_args(input_command):
     return (input_command[0], input_command)
 
 
-def run_command(creds, command):
-    os.environ['AWS_ACCESS_KEY_ID'] = creds.access_key
-    os.environ['AWS_SECRET_ACCESS_KEY'] = creds.secret_key
-    os.environ['AWS_SESSION_TOKEN'] = creds.token
+def run_command(environment_overrides, command):
+    for var, value in environment_overrides.items():
+        if value is not None:
+            os.environ[var] = environment_overrides[var]
+        elif var in os.environ:
+            del os.environ[var]
 
-    os.execvp(*get_exec_args(command))
+    # TODO: use a copy of the environment with variables deleted, to support
+    # platforms without unsetenv() support.
+    os.execvp(command[0], command)
+
+
+def run_shell(environment_overrides, command):
+    # If the first argument to the shell begins with -, the user will want to
+    # separate the remainder of the arguments list with --, which awscli will
+    # unhelpfully pass on to us.
+    if command[0:1] == ["--"]:
+        command.pop(0)
+    command.insert(0, os.environ['SHELL'])
+    run_command(environment_overrides, command)
 
 
 class RoleShell(BasicCommand):
     NAME = 'roleshell'
     DESCRIPTION = (
-        'Executes a shell with temporary AWS credentials provided as environment variables')
+        'Executes a command with temporary AWS credentials provided as '
+        'environment variables')
     ARG_TABLE = [
-        dict(name='command', nargs=argparse.REMAINDER, positional_arg=True),
+        dict(name='shell', action='store_true', help_text='Execute the current '
+             'shell instead of a command.  Any remaining arguments, if any, '
+             'are passed on to the new shell.'),
+        dict(name='command', nargs=argparse.REMAINDER, positional_arg=True,
+             synopsis='[command] [args ...]'),
     ]
 
-    def _run_main(self, args, parsed_globals):
-        c = self._session.get_credentials()
+    def _build_environment_overrides(self):
+        environment_overrides = {}
 
-        if len(args.command) == 0:
-            print_creds(c)
+        creds = self._session.get_credentials()
+        environment_overrides['AWS_ACCESS_KEY_ID'] = creds.access_key
+        environment_overrides['AWS_SECRET_ACCESS_KEY'] = creds.secret_key
+        environment_overrides['AWS_SESSION_TOKEN'] = creds.token
+
+        region = self._session.get_config_variable('region')
+        environment_overrides['AWS_DEFAULT_REGION'] = region
+
+        return environment_overrides
+
+    def _run_main(self, args, parsed_globals):
+        environment_overrides = self._build_environment_overrides()
+
+        if args.shell:
+            run_shell(environment_overrides, args.command)
+        elif args.command:
+            run_command(environment_overrides, args.command)
         else:
-            run_command(c, args.command)
+            print_creds(environment_overrides)

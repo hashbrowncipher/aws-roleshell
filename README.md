@@ -21,6 +21,11 @@ invoking roleshell without arguments:
 
     $ eval $(aws --profile readonly roleshell)
 
+Lastly, you can execute a new copy of your current shell, in which the new role
+will be assumed:
+
+    $ aws --profile readonly roleshell --shell
+
 aws-roleshell makes use of the [aws-cli][aws-cli] temporary credentials cache,
 so multiple roleshells can re-use the same temporary credentials until they
 expire. This is especially useful for IAM roles that require MFA, because an

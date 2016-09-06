@@ -1,6 +1,9 @@
 import argparse
 import os
-import shlex
+try:
+    from shlex import quote as cmd_quote
+except ImportError:
+    from pipes import quote as cmd_quote
 
 from awscli.customizations.commands import BasicCommand
 
@@ -17,7 +20,7 @@ def print_creds(environment_overrides):
     exports = []
     for var, value in environment_overrides.items():
         if value is not None:
-            exports.append("export {}={}".format(var, shlex.quote(value)))
+            exports.append("export {}={}".format(var, cmd_quote(value)))
         else:
             exports.append("unset {}".format(var))
 

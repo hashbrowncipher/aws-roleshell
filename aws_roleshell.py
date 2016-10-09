@@ -47,8 +47,6 @@ def run_shell(environment_overrides, command):
     # If the first argument to the shell begins with -, the user will want to
     # separate the remainder of the arguments list with --, which awscli will
     # unhelpfully pass on to us.
-    if command[0:1] == ["--"]:
-        command.pop(0)
     command.insert(0, os.environ['SHELL'])
     run_command(environment_overrides, command)
 
@@ -81,6 +79,9 @@ class RoleShell(BasicCommand):
 
     def _run_main(self, args, parsed_globals):
         environment_overrides = self._build_environment_overrides()
+
+        if args.command[0:1] == ["--"]:
+            args.command.pop(0)
 
         if args.shell:
             run_shell(environment_overrides, args.command)

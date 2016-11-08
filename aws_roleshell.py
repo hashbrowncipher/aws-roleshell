@@ -1,6 +1,9 @@
 import argparse
 import os
-import shlex
+try:
+    from shlex import quote as cmd_quote
+except ImportError:
+    from pipes import quote as cmd_quote
 
 from awscli.customizations.commands import BasicCommand
 
@@ -17,7 +20,7 @@ def print_creds(environment_overrides):
     exports = []
     for var, value in environment_overrides.items():
         if value is not None:
-            exports.append("export {}={}".format(var, shlex.quote(value)))
+            exports.append("export {}={}".format(var, cmd_quote(value)))
         else:
             exports.append("unset {}".format(var))
 
@@ -47,8 +50,6 @@ def run_shell(environment_overrides, command):
     # If the first argument to the shell begins with -, the user will want to
     # separate the remainder of the arguments list with --, which awscli will
     # unhelpfully pass on to us.
-    if command[0:1] == ["--"]:
-        command.pop(0)
     command.insert(0, os.environ['SHELL'])
     run_command(environment_overrides, command)
 
@@ -81,6 +82,9 @@ class RoleShell(BasicCommand):
 
     def _run_main(self, args, parsed_globals):
         environment_overrides = self._build_environment_overrides()
+
+        if args.command[0:1] == ["--"]:
+            args.command.pop(0)
 
         if args.shell:
             run_shell(environment_overrides, args.command)
